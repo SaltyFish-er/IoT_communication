@@ -55,7 +55,23 @@ def Modulator(packet, fileName):
     playsound('test.wav')
 
 # BFSK解调
-# fileName: 扬声器接收到的文件
 # 返回 packetList: 蓝牙数据包列表
-def Demodulator(fileName):
+def Demodulator(packetList):
   pass
+
+# BFSK调制前导码
+def Modu_Preamble(preamble):
+  # 生成0信号和1信号
+  t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
+  sig_0 = np.sin(2 * np.pi * frequency_0 * t)
+  sig_1 = np.sin(2 * np.pi * frequency_1 * t)
+
+  # 生成将要发射的信号
+  sig = []
+  for i in range(len(preamble)):
+      if preamble[i] == '0':
+        sig = np.append(sig, sig_0)
+      else:
+        sig = np.append(sig, sig_1)
+
+  return sig
