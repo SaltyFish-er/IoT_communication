@@ -23,22 +23,19 @@ volume = 1
 sample_width = 2
 channel = 1
 
-
-
 # BFSK调制函数
-# codes: 待调制的数据，0/1数组
+# packet: 待调制的蓝牙数据包，0/1字符串
 # fileName:保存wav到的文件
-# sigSNR: 信噪比
-def Modulator(codes, fileName):
-    # 生成I信号和Q信号
+def Modulator(packet, fileName):
+    # 生成0信号和1信号
     t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
     sig_0 = np.sin(2 * np.pi * frequency_0 * t)
     sig_1 = np.sin(2 * np.pi * frequency_1 * t)
 
     # 生成将要发射的信号
     sig = []
-    for i in range(len(codes)):
-        if codes[i] == '0':
+    for i in range(len(packet)):
+        if packet[i] == '0':
           sig = np.append(sig, sig_0)
         else:
           sig = np.append(sig, sig_1)
@@ -56,3 +53,9 @@ def Modulator(codes, fileName):
 
     # 将声音文件播放出来
     playsound('test.wav')
+
+# BFSK解调
+# fileName: 扬声器接收到的文件
+# 返回 packetList: 蓝牙数据包列表
+def Demodulator(fileName):
+  pass
