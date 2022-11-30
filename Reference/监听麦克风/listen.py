@@ -3,11 +3,25 @@ import wave
 import numpy as np
 from matplotlib import pyplot as plt
 import scipy.fft
+import scipy.stats as stats
 import random
 
+sample_rate = 64000
+frequency_0 = 18000
+frequency_1 = 21000
+duration = 0.05
+volume = 1
+
+sample_width = 2
+channel = 1
+
+
+
 def Monitor():
-    plt.ion()
+    t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
+    sig_1 = np.sin(2 * np.pi * frequency_1 * t)
     CHUNK = 2000
+    sig_1 = sig_1[:CHUNK]
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
     RATE = 64000
@@ -30,7 +44,7 @@ def Monitor():
         frame += audio_data.tolist()
         spec = np.log10(0.00001+np.abs(scipy.fft.fft(frame)[:CHUNK//2]))
         spec = np.abs(spec)
-        # spec = np.average(np.array([spec[::2], spec[1::2]]), axis=0)
+        spec = np.average(np.array([spec[::2], spec[1::2]]), axis=0)
         spec = np.abs(spec)
         spec=spec[:128]
         LAM = 0.1
@@ -49,19 +63,22 @@ def Monitor():
         frame = []
         data = stream.read(CHUNK, exception_on_overflow=False)
         audio_data = np.fromstring(data, dtype=np.short)
-        frame += audio_data.tolist()
+        frame = audio_data.tolist()
         spec = np.log10(0.00001+np.abs(scipy.fft.fft(frame)[:CHUNK//2]))
+        
         spec = np.abs(spec)
-        # spec = np.average(np.array([spec[::2], spec[1::2]]), axis=0)
+        #spec = np.average(np.array([spec[::2], spec[1::2]]), axis=0)
         spec = np.abs(spec)
-        spec=spec[:128]
+        spec=spec[:128] 
         LAM = 0.5
         spec = last * (1-LAM) + spec * LAM
         if random.randint(0,1)==0:
             plt.cla() #删除画图板上的图像
             plt.ylim((0, 8)) #设置y轴的范围
-            plt.plot(np.arange(len(spec))*32, spec-base)
+            plt.plot(np.arange(len(spec))*32, spec)
             plt.pause(0.001)
+            #print('hello')
+            #print(stats.pearsonr(sig_1, audio_data))
         last = spec
 
     stream.stop_stream()

@@ -52,6 +52,7 @@ def Modulator(packet, fileName):
     wav_file.close()
 
     # 将声音文件播放出来
+    print('world')
     playsound('test.wav')
 
 # BFSK解调

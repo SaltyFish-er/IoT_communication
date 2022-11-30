@@ -9,21 +9,23 @@ def generatePacket(codes: str):
     preamble = '01010101' # 前导码
     address = '10001110100010011011111011010110' # 广播地址
     codes_bytes = bytes(codes, "ascii")
-    
+    print(codes_bytes)
     # 将输入的字符串转为二进制
     data = ""
     for x in codes_bytes:
         binary_converted = "{0:b}".format(x)
         for i in range(8 - len(binary_converted)):
             binary_converted = "0" + binary_converted
+        #print(binary_converted)
         data = data + binary_converted
     
     # 将输入数据分段并封包
     packetList = []
-    data_size = len(data) / 8
+    data_size = len(data)
     begin = 0
     while(begin < data_size):
         length = min(32, data_size - begin)
+        length = int(length)
         b_length = bin(length)
         pdu_length = b_length[2:]
         for i in range(8 - len(pdu_length)):
