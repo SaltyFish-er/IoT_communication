@@ -3,6 +3,9 @@ import numpy as np
 import wave
 import struct
 import matplotlib.pyplot as plt
+import utils
+import binascii
+
 from scipy import signal
 from playsound import playsound
 
@@ -10,13 +13,12 @@ from playsound import playsound
 PREAMBLE_SIZE = 1
 ACCESS_ADDRESS_SIZE = 4
 PDU_LENGTH_SIZE = 1
-PDU_DATA_MAXSIZE = 37
-CRC_SIZE = 3
+PDU_DATA_MAXSIZE = 4
 
 # 参数配置
 sample_rate = 48000
-frequency_0 = 18000
-frequency_1 = 21000
+frequency_0 = 1000
+frequency_1 = 3500
 duration = 0.025
 volume = 1
 
@@ -56,17 +58,36 @@ def Modulator(packet, fileName):
     playsound('test.wav')
 
 # BFSK解调
-# 返回 packetList: 蓝牙数据包列表
-def Demodulator(packetList):
-  pass
+# packet: 蓝牙数据包
+# 返回: 解码后的字符串
+def Demodulator(packet):
+  if len(packet) < 6:
+    print('ERROR: packet size too small, ignoring')
+    return None
+  
+  pdu_length = int(packet[6], 2)
+  data_size = int(pdu_length / 8)
+  
+  if pdu_length == 0:
+    return ''
+
+  result = ''
+  for i in range(7, 7 + data_size):
+    ascii_code = int(packet[i], 2)
+    character = chr(ascii_code)
+    result += character
+  
+  return result
 
 # BFSK调制前导码
-def Modu_Preamble(preamble):
+def Modu_Preamble():
   # 生成0信号和1信号
   t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
   sig_0 = np.sin(2 * np.pi * frequency_0 * t)
   sig_1 = np.sin(2 * np.pi * frequency_1 * t)
 
+  # preamble
+  preamble = "01010101"
   # 生成将要发射的信号
   sig = []
   for i in range(len(preamble)):

@@ -16,7 +16,6 @@ def main():
         FSK.Modulator(packet_list[i], 'test.wav')
         print('hello')
         sleep(0.5)
-    pass
 
 if __name__ == "__main__":
     main()
