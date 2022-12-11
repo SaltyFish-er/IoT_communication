@@ -35,9 +35,14 @@ def Modulator(packet, fileName):
     sig_0 = 0.65*np.sin(2 * np.pi * frequency_0 * t)
     sig_1 = np.sin(2 * np.pi * frequency_1 * t)
     sig_temp = 0*np.sin(2 * np.pi * frequency_1 * t)
-
+    
     # 生成将要发射的信号
     sig = []
+
+    # 生成前导码
+    preamble = utils.get_preamble_sig(100,500)
+    sig.append(preamble)
+    # 生成其他包数据    
     for i in range(len(packet)):
         if packet[i] == '0':
           sig = np.append(sig, sig_0)

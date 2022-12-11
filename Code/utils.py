@@ -59,7 +59,8 @@ def generatePacket(codes: str):
         end = begin + length
         pdu_data = data[begin:end]
         print('begin: ', begin,' end: ', end)
-        packet = preamble + address + pdu_length + pdu_data
+        # packet = preamble + address + pdu_length + pdu_data
+        packet = pdu_length + pdu_data
         packetList.append(packet)
         
         begin += length
@@ -90,6 +91,11 @@ def sig2num_list(sig):
     sig_num_list = [int(x) for x in sig_list]
     return sig_num_list
 
+def get_preamble_sig(f0, f1):
+    t0 = np.linspace(0, 1 * duration * channel, 1 * int(duration * sample_rate * channel))
+    preamble = signal.chirp(t0, f0=f0, f1=f1, t1=0.025, method='linear')
+    return preamble
+
 # 从信号中提取中蓝牙数据包
 # sig: 信号
 # preamble_sig: 前导码调制成的信号
@@ -97,9 +103,9 @@ def extract_packet(sig, preamble_sig):
     # 先滤波
     #sig = bandpass(sig, 3800, 700)
     # print(len(sig), len(preamble_sig))
-    print("sig after bandpass")
-    plt.plot(sig)
-    plt.show()
+    #print("sig after bandpass")
+    #plt.plot(sig)
+    #plt.show()
 
     packet_flag = True
     packetList = []
@@ -252,33 +258,21 @@ def STFT(t, y, window):
     plt.show()
 
 if __name__ == "__main__":
-    # generatePacket("apple pen")
-    # exit(0)
-    t, sig = get_signal_from_wav("myvoices.wav")
-    # sig1 = [0]*48000
-    # t1 = np.linspace(0,1,48001)
-    # t = t + 1
-    # t = np.append(t1[:-1], t)
-    # sig = np.append(sig1,sig)
-    sig_1 = bandpass(sig, 5200, 4800)
-    sig_2 = bandpass(sig, 3200, 2800)
-    sig = sig_1 + sig_2
-    STFT(t, sig, 300)
-    # print(len(t), t[-1])
-    preamble_sig = FSK.Modu_Preamble()
-    # sig = sig[9600:]
-    packetList = extract_packet(sig, preamble_sig)
-    print(packetList)
-    result = ''
-    for packet in packetList:
-        result += FSK.Demodulator(packet)
-    print("decode string:", result)
-    #print("cal envelope corr...")
-    #envelope_corr = envelope_extraction(cross_corr)
-    #plt.subplot(211)
-    #plt.plot(cross_corr)
-    #plt.subplot(212)
-    #plt.plot(envelope_corr)
 
-    #plt.plot(cross_corr)
-    #plt.show()
+    t, sig = get_signal_from_wav("test8.wav")
+    sig1 = [0]*48000
+    # 添加一段空白
+    t1 = np.linspace(0,1,48001)
+    t = t + 1
+    t = np.append(t1[:-1], t)
+    sig = np.append(sig1,sig)    
+    plt.plot(t, sig)
+    plt.show()
+
+    # 前导码匹配
+    preamble = get_preamble_sig(100,500)
+    cross_corr = np.correlate(sig, preamble, 'valid')
+
+    print("cross_corr")
+    plt.plot(cross_corr)
+    plt.show()  
