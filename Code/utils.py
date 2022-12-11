@@ -13,15 +13,16 @@ PDU_DATA_MAXSIZE = 4
 
 # 参数配置
 sample_rate = 48000
-frequency_0 = 1000
-frequency_1 = 3500
+frequency_0 = 3000
+frequency_1 = 5000
 duration = 0.025
 volume = 1
 
 sample_width = 2
 channel = 1
-
-
+t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
+sig_0 = 0.65*np.sin(2 * np.pi * frequency_0 * t)
+sig_111 = np.sin(2 * np.pi * frequency_1 * t)
 # 生成蓝牙数据包
 # codes: 用户输入的字符串
 def generatePacket(codes: str):
@@ -94,7 +95,7 @@ def sig2num_list(sig):
 # preamble_sig: 前导码调制成的信号
 def extract_packet(sig, preamble_sig):
     # 先滤波
-    sig = bandpass(sig, 3800, 700)
+    #sig = bandpass(sig, 3800, 700)
     # print(len(sig), len(preamble_sig))
     print("sig after bandpass")
     plt.plot(sig)
@@ -112,14 +113,15 @@ def extract_packet(sig, preamble_sig):
 
         begin = 0
         for i, value in enumerate(cross_corr):
-            if value > 200000:
+            if value > 50000:
                 begin = i
                 break
 
         window_length = int(duration * sample_rate)
-        end = min(begin + window_length * 8, len(cross_corr))
+        end = min(begin + window_length * 2, len(cross_corr))
         match = max(cross_corr[begin:end])
-        match_index = list(cross_corr).index(match)
+        #match_index = list(cross_corr).index(match)+7200
+        match_index = 45900
         print('begin, end: ', begin, end)
         print('match_index: ', match_index)
         print("cross_corr")
@@ -139,43 +141,65 @@ def extract_packet(sig, preamble_sig):
         end1 = 0
         div_value = 0
         last_div_value = 0
+
+        ###测试
+        #    for i in range(12):
+        #        print(i)
+        #        match_index = match_index+10
+        #        sig1 = list(sig)[match_index: match_index + window_length]
+        #        frequency_high, frequency_low = fft_frequency(sig1)
+         #   print('hello')
+        ###测试
+
+        temp_index = 0
+        sum_0 = 0
+        sum_1 = 0
         while flag:
-            # fft解码
-            end1 = min(index + window_length, len(sig))
-            sig1 = list(sig)[index: end1]
-            frequency_high, frequency_low = fft_frequency(sig1)
-            # try:
-            #     frequency_es = fft_frequency(sig1)
-            # except:
-            #     print('len(sig)', len(sig))
-            #     print('index and end', index, end1)
-            div_value = frequency_high / frequency_low
-            decode_char = '0' 
-            if div_value > last_div_value:
-                decode_char = '1'
-            if last_div_value == 0:
-                decode_char = '0'
-            last_div_value = div_value
-            index += window_length
+            begin = index
+            sig1 = sig[begin: begin+1200]
+            #frequency_high, frequency_low = fft_frequency(sig1)
+            #print(len(sig1),"   ",len(sig_0),"   ",len(sig_1))
+            #print(np.correlate(sig1, sig_0)[0],"  ", np.correlate(sig1, sig_111)[0])
+            temp_index = temp_index+1
+            #print("和0的相似度",np.correlate(sig1, sig_0))
+            #print("和1的相似度",np.correlate(sig1, sig_111))
+            if temp_index==2 or temp_index==3:
+                sum_0 = sum_0 + 2*abs(np.correlate(sig1, sig_0)[0])
+                sum_1 = sum_1 + 2*abs(np.correlate(sig1, sig_111)[0])
+                #fft_frequency(sig1)
+            else:
+                sum_0 = sum_0 + abs(np.correlate(sig1, sig_0)[0])
+                sum_1 = sum_1 + abs(np.correlate(sig1, sig_111)[0])
+            if temp_index == 4:
+                #print("和0的相似度",sum_0)
+                #print("和1的相似度",sum_1)
+                # 合并
+                decode_char = '0' 
+                if abs(sum_1) > abs(sum_0):
+                    decode_char = '1' 
+                index += window_length
+                bit_num += 1
+                one_byte += decode_char
 
-            # 合并
-            bit_num += 1
-            one_byte += decode_char
+                if bit_num == 8:
+                    bit_num = 0 
+                    byte_num += 1
+                    print("byte", byte_num, "--",one_byte)     
+                    t = input()      
+                    if byte_num == 7:
+                        payload_length = int(one_byte, 2)
+                        print("payload",payload_length)
+                    packet.append(one_byte)
 
-            if bit_num == 8:
-                bit_num = 0 
-                byte_num += 1
-                print("byte", byte_num, "--",one_byte)           
-                if byte_num == 7:
-                    payload_length = int(one_byte, 2)
-                    print("payload",payload_length)
-                packet.append(one_byte)
-
-                if byte_num == 7 + payload_length/8:
-                    flag = False
-                
-                one_byte = ''
-            
+                    if byte_num == 7 + payload_length/8:
+                        flag = False
+                    
+                    one_byte = ''
+                temp_index = 0
+                sum_0 = 0
+                sum_1 = 0
+            else:
+                index += window_length
         packetList.append(packet)
         sig = sig[end1:]
     return packetList
@@ -192,11 +216,12 @@ def fft_frequency(sig):
     fft_sig = fft_sig[range(int(n/2))]
     abs_fft_sig = abs(fft_sig)
     #max_value = max(abs_fft_sig)
-    # plt.plot(frq1, abs_fft_sig)
-    # plt.show()
+    plt.plot(frq1, abs_fft_sig)
+    plt.show()
     #max_index = list(abs_fft_sig).index(max_value)
-    frequency_high = abs_fft_sig[list(frq1).index(frequency_1+20)]
-    frequency_low = abs_fft_sig[list(frq1).index(frequency_0)]
+    frequency_high = abs_fft_sig[list(frq1).index(frequency_1+40)]
+    frequency_low = abs_fft_sig[list(frq1).index(frequency_0+40)]
+    print(frequency_high)
     
     return frequency_high, frequency_low
 
@@ -229,13 +254,15 @@ def STFT(t, y, window):
 if __name__ == "__main__":
     # generatePacket("apple pen")
     # exit(0)
-    t, sig = get_signal_from_wav("test.wav")
+    t, sig = get_signal_from_wav("myvoices.wav")
     # sig1 = [0]*48000
     # t1 = np.linspace(0,1,48001)
     # t = t + 1
     # t = np.append(t1[:-1], t)
     # sig = np.append(sig1,sig)
-    # sig = bandpass(sig, 1800, 800)
+    sig_1 = bandpass(sig, 5200, 4800)
+    sig_2 = bandpass(sig, 3200, 2800)
+    sig = sig_1 + sig_2
     STFT(t, sig, 300)
     # print(len(t), t[-1])
     preamble_sig = FSK.Modu_Preamble()
