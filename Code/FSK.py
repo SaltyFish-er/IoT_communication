@@ -65,14 +65,14 @@ def Demodulator(packet):
     print('ERROR: packet size too small, ignoring')
     return None
   
-  pdu_length = int(packet[6], 2)
+  pdu_length = int(packet[5], 2)
   data_size = int(pdu_length / 8)
   
   if pdu_length == 0:
     return ''
 
   result = ''
-  for i in range(7, 7 + data_size):
+  for i in range(6, 6 + data_size):
     ascii_code = int(packet[i], 2)
     character = chr(ascii_code)
     result += character

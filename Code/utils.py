@@ -96,9 +96,9 @@ def extract_packet(sig, preamble_sig):
     # 先滤波
     sig = bandpass(sig, 3800, 700)
     # print(len(sig), len(preamble_sig))
-    print("sig after bandpass")
-    plt.plot(sig)
-    plt.show()
+    # print("sig after bandpass")
+    # plt.plot(sig)
+    # plt.show()
 
     packet_flag = True
     packetList = []
@@ -112,7 +112,7 @@ def extract_packet(sig, preamble_sig):
 
         begin = 0
         for i, value in enumerate(cross_corr):
-            if value > 200000:
+            if value > 0.5:
                 begin = i
                 break
 
@@ -122,8 +122,9 @@ def extract_packet(sig, preamble_sig):
         match_index = list(cross_corr).index(match)
         print('begin, end: ', begin, end)
         print('match_index: ', match_index)
-        print("cross_corr")
+        # print("cross_corr")
         plt.plot(cross_corr)
+        plt.title('cross correlation Analysis')
         plt.show()
         # FFT变换
         # 8个一组提取01数据
@@ -137,25 +138,23 @@ def extract_packet(sig, preamble_sig):
         index = match_index
         flag = True
         end1 = 0
-        div_value = 0
-        last_div_value = 0
+
         while flag:
             # fft解码
             end1 = min(index + window_length, len(sig))
             sig1 = list(sig)[index: end1]
-            frequency_high, frequency_low = fft_frequency(sig1)
+            frequency = fft_frequency(sig1)
             # try:
             #     frequency_es = fft_frequency(sig1)
             # except:
             #     print('len(sig)', len(sig))
             #     print('index and end', index, end1)
-            div_value = frequency_high / frequency_low
+            dis_0 = abs(frequency - frequency_0)
+            dis_1 = abs(frequency - frequency_1)
             decode_char = '0' 
-            if div_value > last_div_value:
+            if dis_0 > dis_1:
                 decode_char = '1'
-            if last_div_value == 0:
-                decode_char = '0'
-            last_div_value = div_value
+                
             index += window_length
 
             # 合并
@@ -166,12 +165,12 @@ def extract_packet(sig, preamble_sig):
                 bit_num = 0 
                 byte_num += 1
                 print("byte", byte_num, "--",one_byte)           
-                if byte_num == 7:
+                if byte_num == 6:
                     payload_length = int(one_byte, 2)
                     print("payload",payload_length)
                 packet.append(one_byte)
 
-                if byte_num == 7 + payload_length/8:
+                if byte_num == 6 + payload_length/8:
                     flag = False
                 
                 one_byte = ''
@@ -191,14 +190,14 @@ def fft_frequency(sig):
     fft_sig = np.fft.fft(sig)
     fft_sig = fft_sig[range(int(n/2))]
     abs_fft_sig = abs(fft_sig)
-    #max_value = max(abs_fft_sig)
+    max_value = max(abs_fft_sig)
     # plt.plot(frq1, abs_fft_sig)
     # plt.show()
-    #max_index = list(abs_fft_sig).index(max_value)
-    frequency_high = abs_fft_sig[list(frq1).index(frequency_1+20)]
-    frequency_low = abs_fft_sig[list(frq1).index(frequency_0)]
-    
-    return frequency_high, frequency_low
+    max_index = list(abs_fft_sig).index(max_value)
+    # frequency_high = abs_fft_sig[list(frq1).index(frequency_1+20)]
+    # frequency_low = abs_fft_sig[list(frq1).index(frequency_0)]
+    frequency = frq1[max_index]
+    return frequency
 
 # 带通滤波
 def bandpass(y: np.ndarray, high, low):
@@ -230,12 +229,12 @@ if __name__ == "__main__":
     # generatePacket("apple pen")
     # exit(0)
     t, sig = get_signal_from_wav("test.wav")
-    # sig1 = [0]*48000
-    # t1 = np.linspace(0,1,48001)
-    # t = t + 1
-    # t = np.append(t1[:-1], t)
-    # sig = np.append(sig1,sig)
-    # sig = bandpass(sig, 1800, 800)
+    sig1 = [0]*48000
+    t1 = np.linspace(0,1,48001)
+    t = t + 1
+    t = np.append(t1[:-1], t)
+    sig = np.append(sig1,sig)
+    #sig = bandpass(sig, 1800, 800)
     STFT(t, sig, 300)
     # print(len(t), t[-1])
     preamble_sig = FSK.Modu_Preamble()
