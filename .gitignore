@@ -1,2 +1,2 @@
 *.wav
-Code/*.wav
+__pycache__
