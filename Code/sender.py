@@ -13,7 +13,7 @@ def main():
     packet_list = utils.generatePacket(message)
     for i in range(len(packet_list)):
         print(packet_list[i])
-        FSK.Modulator(packet_list[i], 'test.wav')
+        FSK.Modulator(packet_list[i], 'test8.wav')
         print('hello')
         sleep(0.5)
 

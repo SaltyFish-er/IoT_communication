@@ -17,8 +17,9 @@ PDU_DATA_MAXSIZE = 4
 
 # 参数配置
 sample_rate = 48000
-frequency_0 = 1000
-frequency_1 = 3500
+frequency_0 = 3000
+frequency_1 = 5000
+frequency_temp = 4000
 duration = 0.025
 volume = 1
 
@@ -31,16 +32,28 @@ channel = 1
 def Modulator(packet, fileName):
     # 生成0信号和1信号
     t = np.linspace(0, duration * channel, int(duration * sample_rate * channel))
-    sig_0 = np.sin(2 * np.pi * frequency_0 * t)
+    sig_0 = 0.65*np.sin(2 * np.pi * frequency_0 * t)
     sig_1 = np.sin(2 * np.pi * frequency_1 * t)
-
+    sig_temp = 0*np.sin(2 * np.pi * frequency_1 * t)
+    
     # 生成将要发射的信号
     sig = []
+
+    # 生成前导码
+    preamble = utils.get_preamble_sig(6000,6500)
+    sig.append(preamble)
+    sig = np.append(sig,sig_temp)
+    sig = np.append(sig,sig_temp)
+    sig = np.append(sig,sig_temp)
+    # 生成其他包数据    
     for i in range(len(packet)):
         if packet[i] == '0':
           sig = np.append(sig, sig_0)
         else:
           sig = np.append(sig, sig_1)
+        sig = np.append(sig,sig_temp)
+        sig = np.append(sig,sig_temp)
+        sig = np.append(sig,sig_temp)#空了三个静音拍
 
     # 保存信号波形为.wav文件
     wav_file = wave.open(fileName, 'wb')
@@ -55,7 +68,7 @@ def Modulator(packet, fileName):
 
     # 将声音文件播放出来
     print('world')
-    playsound('test.wav')
+    playsound(fileName)
 
 # BFSK解调
 # packet: 蓝牙数据包
