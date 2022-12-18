@@ -1,0 +1,7 @@
+numpy
+wave
+scipy
+requests
+pyaudio
+PyQt5
+playsound
