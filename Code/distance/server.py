@@ -171,9 +171,10 @@ class Server(QWidget):
             distance = 'error'
             print('ERROR: cannot get msg from http_server')
         else:
-            time_delta_client = int(time_delta_client)
+            time_delta_client = float(time_delta_client)
             # 计算距离
-            distance = time_delta_server + time_delta_client
+            distance = time_delta_server - time_delta_client
+            print(distance)
         return distance
 
 

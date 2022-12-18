@@ -5,3 +5,4 @@ requests
 pyaudio
 PyQt5
 playsound
+matplotlib

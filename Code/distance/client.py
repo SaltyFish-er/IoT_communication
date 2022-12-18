@@ -3,12 +3,14 @@ import os
 import sys
 import time
 import requests
+import matplotlib.pyplot as plt
 
 from threading import Thread
 from pyaudio import PyAudio, paInt16
 from PyQt5.QtWidgets import QWidget, QPushButton, QApplication, QLabel
 from PyQt5.QtGui import QIcon, QFont
 from playsound import playsound
+
 
 from beepbeep import *
 # 参数配置
@@ -140,6 +142,8 @@ class Server(QWidget):
         # 前导码匹配
         preamble = generate_chrip(6500,7000)
         cross_corr = np.correlate(sig, preamble, 'valid')
+        plt.plot(cross_corr)
+        plt.show()
         begin = 0
         for i, value in enumerate(cross_corr):
             if value > 1000:
