@@ -68,8 +68,8 @@ def analyze_message():
     index = 0
     match_list = []
     while index < len(cross_corr):
-        if cross_corr[index] > 50000:
-            temp = cross_corr[index:index+3600]
+        if cross_corr[index] > 100000:
+            temp = cross_corr[index:index+36000]
             match_pos = np.argmax(temp)
             match_pos = match_pos + index
             print(match_pos) #开始匹配上的位置
@@ -80,13 +80,25 @@ def analyze_message():
     
     for match_pos in match_list:
         m = utils.extract_message(sig, match_pos+4800)
-        textExample.insert ("end", m )
+        if m == 0:
+            print('抱歉，发生丢包')
+        else:
+            textExample.insert ("end", m )
 
 start_analyze = tk.Button(window, height=1, width=10, text="开始分析", command=lambda:analyze_message())  # command绑定获取文本框内容的方法
  
 # 第8步，安置按钮
 start_analyze.pack()  # 显示按钮
 
+def saveTXT():
+    result = textExample.get("1.0", "end")  # 获取文本输入框的内容
+    with open('test.txt','w',encoding='utf-8') as f:
+        f.write(result)
+
+save_txt = tk.Button(window, height=1, width=10, text="保存文本", command=lambda:saveTXT())  # command绑定获取文本框内容的方法
+ 
+# 第8步，安置按钮
+save_txt.pack()  # 显示按钮
 
 # 第9步，
 window.mainloop()

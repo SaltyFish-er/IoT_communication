@@ -26,6 +26,10 @@ def getTextInput():
     textExample.delete("1.0","end")
     print(result)  # 输出结果
     packet_list = utils.generatePacket(result)
+    temp_list='0101010101010101'
+    FSK.Modulator2(temp_list, 'test8.wav')
+    print('hello')
+    sleep(0.5)
     for i in range(len(packet_list)):
         print(packet_list[i])
         FSK.Modulator(packet_list[i], 'test8.wav')

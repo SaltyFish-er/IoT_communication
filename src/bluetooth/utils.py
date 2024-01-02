@@ -27,8 +27,96 @@ sig_111 = np.sin(2 * np.pi * frequency_1 * t)
 # codes: 用户输入的字符串
 def generatePacket(codes: str):
     # 设置蓝牙数据包的一些参数
-    preamble = '01010101' # 前导码
-    address = '10001110100010011011111011010110' # 广播地址
+    is_english = 1
+    code_temp = bin(ord(codes[0]))[2:]
+    if len(code_temp) > 8:
+        is_english = 0
+        print('开始是中文')
+    packetList = []
+    packet = ''
+    for i in codes:
+        #print((bin(ord(i))))
+        #print(bin(ord(i))[2:])
+        code_temp = bin(ord(i))[2:]
+        if len(code_temp) > 8:
+            for i in range(16 - len(code_temp)):
+                code_temp = "0" + code_temp
+            if is_english == 0:
+                packet = packet + code_temp
+                if len(packet) >= 80:
+                    length = int(len(packet) / 16)
+                    b_length = bin(length)
+                    pdu_length = b_length[2:]
+                    print("pdu_length: ", pdu_length)
+                    for i in range(8 - len(pdu_length)):
+                        pdu_length = "0" + pdu_length
+                    packet = pdu_length + packet
+                    packetList.append(packet)
+                    packet = ''
+            if is_english == 1:
+                is_english = 0
+                length = int(len(packet))
+                b_length = bin(length)
+                pdu_length = b_length[2:]
+                print("pdu_length: ", pdu_length)
+                for i in range(8 - len(pdu_length)):
+                    pdu_length = "0" + pdu_length
+                packet = pdu_length + packet
+                packetList.append(packet)
+                packet = code_temp
+        else:
+            for i in range(8 - len(code_temp)):
+                code_temp = "0" + code_temp
+            if is_english == 1:
+                packet = packet + code_temp
+                if len(packet) >= 80:
+                    length = int(len(packet))
+                    b_length = bin(length)
+                    pdu_length = b_length[2:]
+                    print("pdu_length: ", pdu_length)
+                    for i in range(8 - len(pdu_length)):
+                        pdu_length = "0" + pdu_length
+                    packet = pdu_length + packet
+                    packetList.append(packet)
+                    packet = ''
+            if is_english == 0:
+                is_english = 1
+                length = int(len(packet)/16)
+                b_length = bin(length)
+                pdu_length = b_length[2:]
+                print("pdu_length: ", pdu_length)
+                for i in range(8 - len(pdu_length)):
+                    pdu_length = "0" + pdu_length
+                packet = pdu_length + packet
+                packetList.append(packet)
+                packet = code_temp
+    if len(packet) > 0:
+        if is_english == 0:
+            length = int(len(packet)/16)
+            b_length = bin(length)
+            pdu_length = b_length[2:]
+            print("pdu_length: ", pdu_length)
+            for i in range(8 - len(pdu_length)):
+                pdu_length = "0" + pdu_length
+            packet = pdu_length + packet
+            packetList.append(packet)
+        if is_english == 1:
+            length = int(len(packet))
+            b_length = bin(length)
+            pdu_length = b_length[2:]
+            print("pdu_length: ", pdu_length)
+            for i in range(8 - len(pdu_length)):
+                pdu_length = "0" + pdu_length
+            packet = pdu_length + packet
+            packetList.append(packet)
+    return packetList
+  
+        
+
+
+
+
+'''
     codes_bytes = bytes(codes, "ascii")
     #print(codes_bytes)
     # 将输入的字符串转为二进制
@@ -66,6 +154,7 @@ def generatePacket(codes: str):
         begin += length
 
     return packetList
+    '''
 
 # 将wav文件读取为信号
 # fileName: 文件名
@@ -121,32 +210,67 @@ def extract_message(sig, begin):
             temp_index = 0
             sum_0 = 0
             sum_1 = 0
-    print("信號包的長度爲:",message_len)
-    message_len = int(message_len/8)
+    #print("信號包的長度爲:",message_len)
+    #if message_len > 80:
+        #return 0 #发生丢包
     message_list = ''
-    for i in range(message_len):
-        num_power = 256
-        message_len = 0
-        while num_power > 1:
-            begin = index
-            index += 1200
-            sig1 = sig[begin: begin+1200]
-            temp_index = temp_index+1
-            if temp_index==2 or temp_index==3:
-                sum_0 = sum_0 + 2*abs(np.correlate(sig1, sig_0)[0])
-                sum_1 = sum_1 + 2*abs(np.correlate(sig1, sig_111)[0])
-            else:
-                sum_0 = sum_0 + abs(np.correlate(sig1, sig_0)[0])
-                sum_1 = sum_1 + abs(np.correlate(sig1, sig_111)[0])
-            if temp_index == 4:
-                num_power = num_power / 2
-                if sum_0 < sum_1:
-                    message_len = message_len + num_power
-                temp_index = 0
-                sum_0 = 0
-                sum_1 = 0
-        print("信息為:",chr(int(message_len)))
-        message_list = message_list+(chr(int(message_len)))
+    if message_len >= 8:
+        message_len = int(message_len/8)
+        if message_len > 10:
+            message_len = 10 
+        for i in range(message_len):
+            num_power = 256
+            message_len = 0
+            while num_power > 1:
+                begin = index
+                index += 1200
+                if index >= len(sig):
+                    return 0 #发生丢包
+                sig1 = sig[begin: begin+1200]
+                temp_index = temp_index+1
+                if temp_index==2 or temp_index==3:
+                    sum_0 = sum_0 + 1.6*abs(np.correlate(sig1, sig_0)[0])
+                    sum_1 = sum_1 + 1.6*abs(np.correlate(sig1, sig_111)[0])
+                else:
+                    sum_0 = sum_0 + abs(np.correlate(sig1, sig_0)[0])
+                    sum_1 = sum_1 + abs(np.correlate(sig1, sig_111)[0])
+                if temp_index == 4:
+                    num_power = num_power / 2
+                    if sum_0 < sum_1:
+                        message_len = message_len + num_power
+                    temp_index = 0
+                    sum_0 = 0
+                    sum_1 = 0
+            if message_len > 128:
+                message_len = message_len-128
+            print("信息為:",chr(int(message_len)))
+            message_list = message_list+(chr(int(message_len)))
+    else:
+        for i in range(int(message_len)):
+            num_power = 65536
+            message_len = 0
+            while num_power > 1:
+                begin = index
+                index += 1200
+                if index >= len(sig):
+                    return 0 #发生丢包
+                sig1 = sig[begin: begin+1200]
+                temp_index = temp_index+1
+                if temp_index==2 or temp_index==3:
+                    sum_0 = sum_0 + 2*abs(np.correlate(sig1, sig_0)[0])
+                    sum_1 = sum_1 + 2*abs(np.correlate(sig1, sig_111)[0])
+                else:
+                    sum_0 = sum_0 + abs(np.correlate(sig1, sig_0)[0])
+                    sum_1 = sum_1 + abs(np.correlate(sig1, sig_111)[0])
+                if temp_index == 4:
+                    num_power = num_power / 2
+                    if sum_0 < sum_1:
+                        message_len = message_len + num_power
+                    temp_index = 0
+                    sum_0 = 0
+                    sum_1 = 0
+            print("信息為:",chr(int(message_len)))
+            message_list = message_list+(chr(int(message_len)))
     return message_list
 
 
